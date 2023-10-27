@@ -23,13 +23,16 @@ DEFINE VARIABLES
 
 projectDir = "/home/rykalinav/scratch/rki_bowtie_host_filter/Pipeline"
 
+// Parameters for host db
+params.host_db = "${rojectDir}/References/GRCh38_noalt_as/"
+
 
 // Get software versions
 process SoftwareVersions {
     publishDir "${params.outdir}/01_software_versions", mode: 'copy'
 
     output:
-        pathe "software_versions.txt"
+        path "software_versions.txt"
 
     script:
     """
@@ -47,7 +50,8 @@ process SoftwareVersions {
 /************************** 
 ---------WORKFLOW----------
 **************************/
-ch_infiles = channel.fromFilePairs("${projectDir}/RawData/*_R{1,2}*.fastq.gz")
+ch_software_versions = SoftwareVersions()
+//ch_infiles = channel.fromFilePairs("${projectDir}/RawData/*_R{1,2}*.fastq.gz")
 
 workflow {
 
@@ -63,17 +67,16 @@ workflow {
 PROCESSES
 **************************/
 
-// kraken2
+// bowtie2
 process MAP {
 
     label "bowtie"
-    conda "${projectDir}/Environments/bowtie.yml"
-    publishDir "${params.outdir}/01_classified_reads/${id}", mode: "copy", overwrite: true
+    conda "${projectDir}/Environments/bowtie2.yml"
+    publishDir "${params.outdir}/01_mapped_reads/${id}", mode: "copy", overwrite: true
 
     input:
         tuple val(id), path(reads)
-        val (db)
-
+  
     output:
         tuple val(id), path("${id}_classified_R*.fastq"),     emit: classified_fastq
         tuple val(id), path("${id}_unclassified_R*.fastq"),   emit: unclassified_fastq
@@ -82,15 +85,13 @@ process MAP {
 
     script:
         """
-            kraken2 \
-                --threads 10 \
-                --db ${params.krakendb} \
-                --paired \
-                --classified-out ${id}_classified_R#.fastq \
-                --unclassified-out ${id}_unclassified_R#.fastq \
-                --output ${id}_kraken2_out.txt \
-                --report ${id}_kraken2_report.txt \
-                ${reads[0]} ${reads[1]}
+        bowtie2 \
+        -p 8 \
+        -x ${host_db} \
+        -1 ${read[0]} \
+        -2 ${read[1]} \
+        -S ${id}_mapped_and_unmapped.sam"
+        
         """
      
 }
