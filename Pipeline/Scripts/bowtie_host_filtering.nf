@@ -24,8 +24,25 @@ DEFINE VARIABLES
 projectDir = "/home/rykalinav/scratch/rki_bowtie_host_filter/Pipeline"
 
 
-// Parameters for kraken2
-params.krakendb = "/scratch/databases/kraken2_20230314/"
+// Get software versions
+process SoftwareVersions {
+    publishDir "${params.outdir}/01_software_versions", mode: 'copy'
+
+    output:
+        pathe "software_versions.txt"
+
+    script:
+    """
+    echo "software\tversion\tbuild\tchannel" > tempfile
+    
+    conda list | \
+    grep "bowtie2\\|samtools\\|" >> tempfile
+
+    # replace blanks with tab for easier processing downstream
+    tr -s '[:blank:]' '\t' < tempfile > software_versions.txt
+    """
+}
+
 
 /************************** 
 ---------WORKFLOW----------
@@ -34,11 +51,11 @@ ch_infiles = channel.fromFilePairs("${projectDir}/RawData/*_R{1,2}*.fastq.gz")
 
 workflow {
 
-    ch_classified = CLASSIFY(ch_infiles, params.krakendb)
-    ch_extracted = EXTRACT(ch_classified.classified_fastq, ch_classified.kraken2_output)
-    ch_merged_ags = ch_classified.unclassified_fastq.combine(ch_extracted.filtered, by:0)
-    ch_merged_compressed = MERGE(ch_merged_ags)
-    //ch_compressed = COMPRESS(ch_extracted.extracted_fastq)
+    //ch_classified = CLASSIFY(ch_infiles, params.krakendb)
+    //ch_extracted = EXTRACT(ch_classified.classified_fastq, ch_classified.kraken2_output)
+    //ch_merged_ags = ch_classified.unclassified_fastq.combine(ch_extracted.filtered, by:0)
+    //ch_merged_compressed = MERGE(ch_merged_ags)
+    
 
 }
 
