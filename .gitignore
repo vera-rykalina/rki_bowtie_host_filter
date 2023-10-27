@@ -1,0 +1,15 @@
+GitShiver/*
+Pipeline/.nextflow
+Pipeline/Results/
+Pipeline/RawData/*
+Pipeline/.nextflow.log*
+Pipeline/.nextflow
+Pipeline/Test/
+Pipeline/work/
+Pipeline/.DS_Store
+Pipeline/work/Scripts/bin/tools/__pycache__/AuxiliaryFunctions.cpython-310.pycPipeline/Scripts/bin/tools/__pycache__/ShiverFuncs.cpython-35.pyc
+Pipeline/Scripts/bin/tools/__pycache__/AuxiliaryFunctions.cpython-35.pyc
+Scripts/bin/tools/AuxiliaryFunctions.pyc
+*.pyc
+Pipeline/conda
+Pipeline/References
