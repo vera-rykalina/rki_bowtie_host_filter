@@ -41,7 +41,7 @@ ch_indeces = Channel
 
 workflow {
     ch_mapped_reads = MAP(params.index_prefix, ch_fastq, ch_indeces.collect())
- 
+    ch_unmapped_reads = FILTER(ch_mapped_reads)
 }
 
 /************************** 
@@ -50,10 +50,9 @@ PROCESSES
 
 // bowtie2
 process MAP {
-
-    label "bowtie2"
-    conda "${projectDir}/Environments/bowtie2.yml"
-    publishDir "${params.outdir}/01_mapped_reads/${id}", mode: "copy", overwrite: true
+    label "bowtie_samtools"
+    conda "${projectDir}/Environments/bowtie_samtools.yml"
+    publishDir "${params.outdir}/01_all_mapped_reads", mode: "copy", overwrite: true
 
     input:
         val (prefix)
@@ -71,15 +70,42 @@ process MAP {
     script:
         """
         bowtie2 \
-        -p ${task.cpus} \
-        -x ${prefix} \
-        -1 ${reads[0]} \
-        -2 ${reads[1]} | samtools view \
-        -b \
-        -S \
-        - \
-        -o ${id}_mapped_and_unmapped.bam
+          -p ${task.cpus} \
+          -x ${prefix} \
+          -1 ${reads[0]} \
+          -2 ${reads[1]} | samtools view \
+          -b \
+          -S \
+          - \
+          -o ${id}_mapped_and_unmapped.bam
+        """    
+}
 
+// samtools
+process FILTER {
+    conda "${projectDir}/Environments/bowtie_samtools.yml"
+    publishDir "${params.outdir}/02_all_unmapped_reads", mode: "copy", overwrite: true
+
+    input:
+        tuple val(id), path(mapped_reads)
+
+    output:
+        tuple val(id), path("${id}_both_reads_unmapped.bam"),  emit: all_reads_bam
+
+    /* 
+    Get unmapped pairs (both reads R1 and R2 unmapped) 
+    Extract only (-f 12) alignments with both reads unmapped: <read unmapped><mate unmapped>
+    Do not (-F 256) extract alignments which are: <not primary alignment>
+    */
+
+    script:
+        """
+        samtools view \
+          -b \
+          -f 12 \
+          -F 256 \
+           ${mapped_reads} \
+          -o ${id}_both_reads_unmapped.bam
         """    
 }
 
