@@ -164,4 +164,5 @@ process SPLIT {
            -1 ${id}_R1.fastq.gz \
            -2 ${id}_R2.fastq.gz        
         """    
+// might need renaming if used further, e.g. id_host_removed_{R1,R2}.fastq.gz
 }
