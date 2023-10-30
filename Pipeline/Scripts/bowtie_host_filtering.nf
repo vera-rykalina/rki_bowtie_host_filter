@@ -42,6 +42,8 @@ ch_indeces = Channel
 workflow {
     ch_mapped_reads = MAP(params.index_prefix, ch_fastq, ch_indeces.collect())
     ch_unmapped_reads = FILTER(ch_mapped_reads)
+    ch_sorted_unmapped_reads = SORT(ch_unmapped_reads)
+    ch_host_removed_reads = SPLIT(ch_sorted_unmapped_reads)
 }
 
 /************************** 
@@ -60,7 +62,7 @@ process MAP {
         path (indeces)
 
     output:
-        tuple val(id), path("${id}_mapped_and_unmapped.bam"),  emit: all_reads_bam
+        tuple val(id), path("${id}_mapped_and_unmapped.bam"),  emit: all_mapped
 
     /* 
     bowtie2 mapping against host sequence database, 
@@ -73,7 +75,9 @@ process MAP {
           -p ${task.cpus} \
           -x ${prefix} \
           -1 ${reads[0]} \
-          -2 ${reads[1]} | samtools view \
+          -2 ${reads[1]} |\
+          
+        samtools view \
           -b \
           -S \
           - \
@@ -90,7 +94,7 @@ process FILTER {
         tuple val(id), path(mapped_reads)
 
     output:
-        tuple val(id), path("${id}_both_reads_unmapped.bam"),  emit: all_reads_bam
+        tuple val(id), path("${id}_both_reads_unmapped.bam"),  emit: all_unmapped
 
     /* 
     Get unmapped pairs (both reads R1 and R2 unmapped) 
@@ -104,8 +108,60 @@ process FILTER {
           -b \
           -f 12 \
           -F 256 \
-           ${mapped_reads} \
+          ${mapped_reads} \
           -o ${id}_both_reads_unmapped.bam
         """    
 }
 
+// samtools
+process SORT {
+    label "samtools_sort"
+    conda "${projectDir}/Environments/bowtie_samtools.yml"
+    publishDir "${params.outdir}/03_sorted_unmapped_reads", mode: "copy", overwrite: true
+
+    input:
+        tuple val(id), path(unmapped_reads)
+
+    output:
+        tuple val(id), path("${id}_unmapped_sorted.bam"),  emit: unmapped_sorted
+
+    /* 
+    Sort bam file by read name (-n) to have paired reads next to each other
+    */
+
+    script:
+        """
+        samtools sort \
+          -n \
+          -@ 2 \
+          ${unmapped_reads} \
+          -o ${id}_unmapped_sorted.bam
+        """    
+}
+
+// samtools
+process SPLIT {
+    label "samtools_fastq"
+    conda "${projectDir}/Environments/bowtie_samtools.yml"
+    publishDir "${params.outdir}/04_host_removed_reads", mode: "copy", overwrite: true
+
+    input:
+        tuple val(id), path(sorted_reads)
+
+    output:
+        tuple val(id), path("${id}_{R1,R2}.fastq.gz"),  emit: split_fastq_gz
+
+    /* 
+    Split paired-end reads into separated fastq files id_{R1,R2}.fastq.gz
+    */
+
+    script:
+        """
+        samtools fastq \
+           -@ 8 \
+           -n \
+           ${sorted_reads} \
+           -1 ${id}_R1.fastq.gz \
+           -2 ${id}_R2.fastq.gz        
+        """    
+}
