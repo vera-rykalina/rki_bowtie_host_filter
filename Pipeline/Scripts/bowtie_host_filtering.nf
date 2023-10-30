@@ -30,13 +30,9 @@ params.index_prefix = "GRCh38_noalt_as"
 /************************** 
 ---------WORKFLOW----------
 **************************/
-ch_fastq = Channel
-        .fromFilePairs("${projectDir}/RawData/*_R{1,2}*.fastq.gz", checkIfExists: true)
-        .ifEmpty { exit 1, "Fastq files are not found: " }
-
-ch_indeces = Channel
-        .fromPath("${projectDir}/References/GRCh38_noalt_as/*.bt2")
-        .ifEmpty { exit 1, "Bowtie2 index directory not found: " }
+ch_fastq = Channel.fromFilePairs("${projectDir}/RawData/*_R{1,2}*.fastq.gz", checkIfExists: true)
+ch_indeces = Channel.fromPath("${projectDir}/References/GRCh38_noalt_as/*.bt2", checkIfExists: true)
+        
 
 
 workflow {
@@ -149,7 +145,7 @@ process SPLIT {
         tuple val(id), path(sorted_reads)
 
     output:
-        tuple val(id), path("${id}_{R1,R2}.fastq.gz"),  emit: split_fastq_gz
+        tuple val(id), path("${id}_R{1,2}.fastq.gz"),  emit: split_fastq_gz
 
     /* 
     Split paired-end reads into separated fastq files id_{R1,R2}.fastq.gz
@@ -164,5 +160,5 @@ process SPLIT {
            -1 ${id}_R1.fastq.gz \
            -2 ${id}_R2.fastq.gz        
         """    
-// might need renaming if used further, e.g. id_host_removed_{R1,R2}.fastq.gz
+// might need renaming if used further, e.g. id_host_removed_R{1,2}.fastq.gz
 }
