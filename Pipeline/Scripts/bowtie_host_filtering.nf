@@ -40,6 +40,7 @@ workflow {
     ch_unmapped_reads = FILTER(ch_mapped_reads)
     ch_sorted_unmapped_reads = SORT(ch_unmapped_reads)
     ch_host_removed_reads = SPLIT(ch_sorted_unmapped_reads)
+    ch_marked_header_reads = MARK_HEADER(ch_host_removed_reads)
 }
 
 /************************** 
@@ -160,4 +161,32 @@ process SPLIT {
            -1 ${id}_host_removed_R1.fastq.gz \
            -2 ${id}_host_removed_R2.fastq.gz        
         """    
+}
+
+// awk
+process MARK_HEADER {
+    publishDir "${params.outdir}/05_header_marked_reads", mode: "copy", overwrite: true
+
+    input:
+        tuple val(id), path(host_removed_reads)
+
+    output:
+        tuple val(id), path("${id}_R{1,2}.fastq.gz"),  emit: marked_header
+
+    /* 
+    Add 1 and 2 to the end of fastq read header correspondingly (needed for shiver)
+    */
+
+    script:
+        """
+        zcat ${host_removed_reads[0]} |\
+        awk '{if (NR%4 == 1) {print \$1 " 1"} else print}' |\
+        gzip -c > ${id}_R1.fastq.gz
+        rm ${host_removed_reads[0]}
+
+        zcat ${host_removed_reads[1]} |\
+        awk '{if (NR%4 == 1) {print \$1 " 2"} else print}' |\
+        gzip -c > ${id}_R2.fastq.gz
+        rm ${host_removed_reads[1]}   
+       """    
 }
