@@ -13,9 +13,9 @@ if (!params.outdir) {
 
 // $ nextflow run ../scratch/rki_bowtie_host_filter/Pipeline/Scripts/rki_bowtie_host_filtering.nf \
 // -profile rki_slurm,rki_mamba \
+// -c Scripts/rki_profile.config \
 // -with-report logs/test.$(date +%T).report.html \
-// # use this parameter for an empty test run
-// -stub
+
 
 /************************** 
 DEFINE VARIABLES
@@ -50,7 +50,7 @@ PROCESSES
 // bowtie2
 process MAP {
     label "bowtie_samtools"
-    conda "${projectDir}/Environments/bowtie_samtools.yml"
+    conda "${projectDir}/Environments/bowtie2_v2.5.2.yml"
     publishDir "${params.outdir}/01_all_mapped_reads", mode: "copy", overwrite: true
 
     input:
@@ -59,7 +59,7 @@ process MAP {
         path (indeces)
 
     output:
-        tuple val(id), path("${id}_mapped_and_unmapped.bam"),  emit: all_mapped
+        tuple val(id), path("${id}_mapped_and_unmapped.bam")
 
     /* 
     bowtie2 mapping against host sequence database, 
@@ -113,14 +113,14 @@ process FILTER {
 // samtools
 process SORT {
     label "samtools_sort"
-    conda "${projectDir}/Environments/bowtie_samtools.yml"
+    conda "${projectDir}/Environments/bowtie2_v2.5.2.yml"
     publishDir "${params.outdir}/03_sorted_unmapped_reads", mode: "copy", overwrite: true
 
     input:
         tuple val(id), path(unmapped_reads)
 
     output:
-        tuple val(id), path("${id}_unmapped_sorted.bam"),  emit: unmapped_sorted
+        tuple val(id), path("${id}_unmapped_sorted.bam")
 
     /* 
     Sort bam file by read name (-n) to have paired reads next to each other
@@ -139,14 +139,14 @@ process SORT {
 // samtools
 process SPLIT {
     label "samtools_fastq"
-    conda "${projectDir}/Environments/bowtie_samtools.yml"
+    conda "${projectDir}/Environments/bowtie2_v2.5.2.yml"
     publishDir "${params.outdir}/04_host_removed_reads", mode: "copy", overwrite: true
 
     input:
         tuple val(id), path(sorted_reads)
 
     output:
-        tuple val(id), path("${id}_host_removed_R{1,2}.fastq.gz"),  emit: split_fastq_gz
+        tuple val(id), path("${id}_host_removed_R{1,2}.fastq.gz")
 
     /* 
     Split paired-end reads into separated fastq files id_{R1,R2}.fastq.gz
@@ -171,7 +171,7 @@ process MARK_HEADER {
         tuple val(id), path(host_removed_reads)
 
     output:
-        tuple val(id), path("${id}_R{1,2}.fastq.gz"),  emit: marked_header
+        tuple val(id), path("${id}_R{1,2}.fastq.gz")
 
     /* 
     Add 1 and 2 to the end of fastq read header correspondingly (needed for shiver)
