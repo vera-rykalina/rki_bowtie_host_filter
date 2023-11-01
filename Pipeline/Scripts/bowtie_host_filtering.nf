@@ -50,7 +50,8 @@ PROCESSES
 // bowtie2
 process MAP {
     label "bowtie_samtools"
-    conda "${projectDir}/Environments/bowtie2_v2.5.2.yml"
+    conda "/home/rykalinav/.conda/envs/bowtie2_v2.5.2"
+    //conda "${projectDir}/Environments/bowtie2_v2.5.2.yml"
     publishDir "${params.outdir}/01_all_mapped_reads", mode: "copy", overwrite: true
 
     input:
@@ -84,7 +85,8 @@ process MAP {
 
 // samtools
 process FILTER {
-    conda "${projectDir}/Environments/bowtie_samtools.yml"
+    conda "/home/rykalinav/.conda/envs/bowtie2_v2.5.2"
+    //conda "${projectDir}/Environments/bowtie2_v2.5.2.yml"
     publishDir "${params.outdir}/02_all_unmapped_reads", mode: "copy", overwrite: true
 
     input:
@@ -113,7 +115,8 @@ process FILTER {
 // samtools
 process SORT {
     label "samtools_sort"
-    conda "${projectDir}/Environments/bowtie2_v2.5.2.yml"
+    conda "/home/rykalinav/.conda/envs/bowtie2_v2.5.2"
+    //conda "${projectDir}/Environments/bowtie2_v2.5.2.yml"
     publishDir "${params.outdir}/03_sorted_unmapped_reads", mode: "copy", overwrite: true
 
     input:
@@ -139,7 +142,8 @@ process SORT {
 // samtools
 process SPLIT {
     label "samtools_fastq"
-    conda "${projectDir}/Environments/bowtie2_v2.5.2.yml"
+    conda "/home/rykalinav/.conda/envs/bowtie2_v2.5.2"
+    //conda "${projectDir}/Environments/bowtie2_v2.5.2.yml"
     publishDir "${params.outdir}/04_host_removed_reads", mode: "copy", overwrite: true
 
     input:
