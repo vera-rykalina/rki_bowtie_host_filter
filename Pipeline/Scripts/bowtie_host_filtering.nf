@@ -145,7 +145,7 @@ process SPLIT {
         tuple val(id), path(sorted_reads)
 
     output:
-        tuple val(id), path("${id}_R{1,2}.fastq.gz"),  emit: split_fastq_gz
+        tuple val(id), path("${id}_host_removed_R{1,2}.fastq.gz"),  emit: split_fastq_gz
 
     /* 
     Split paired-end reads into separated fastq files id_{R1,R2}.fastq.gz
@@ -157,8 +157,7 @@ process SPLIT {
            -@ 8 \
            -n \
            ${sorted_reads} \
-           -1 ${id}_R1.fastq.gz \
-           -2 ${id}_R2.fastq.gz        
+           -1 ${id}_host_removed_R1.fastq.gz \
+           -2 ${id}_host_removed_R2.fastq.gz        
         """    
-// might need renaming if used further, e.g. id_host_removed_R{1,2}.fastq.gz
 }
